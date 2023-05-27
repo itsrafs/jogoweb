@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Plataforma</title>
+    <script src="js/phaser.min.js"></script>
+<link rel="stylesheet" href="css/screen.css">
+</head>
+    
+<body>
+    <script type="text/javascript">
+        //copiei do codigo do caio, alterar se necessario
+        var config = {
+            type: Phaser.AUTO,
+            width: 800,
+            height: 400,
+            transparent: true,
+            physics: 
+            {
+                default: "arcade",
+                arcade: 
+                {
+					fps: 120,
+                    gravity: { y: 300 }
+                }
+            },
+            scale: 
+            {
+                zoom: 2
+            },
+            scene: 
+            {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        var game = new Phaser.Game(config);
+
+        let coinsLayer;
+        let lifesLayer;
+        let exitLayer;
+
+        let coins;
+        let lifes;
+        let exit;
+
+        function preload()
+        {
+            this.load.image("tiles", "assets/monochrome_tilemap_transparent_packed.png");
+            this.load.tilemapTiledJSON('cave', "assets/webmap.json");
+
+            this.load.image("coin", "assets/coin.png");
+            this.load.image("life", "assets/heart.png");
+            this.load.image("exit", "assets/exit.png");
+        }
+
+        function create()
+        {
+            //Mapa
+            const map = this.make.tilemap({key: 'cave'});
+            const tileset = map.addTilesetImage('cave', 'tiles');
+        
+            const ground = map.createLayer("ground", tileset);
+
+            map.createLayer("groundhard", tileset);
+            map.createLayer("stairs", tileset);
+            map.createLayer("death", tileset);
+            map.createLayer("decor", tileset);
+
+            //Objetos
+            
+            coinsLayer  = map.getObjectLayer('coins')['objects'];
+            coins = this.physics.add.staticGroup();
+            coinsLayer.forEach(object => 
+            {
+                let obj = coins.create(object.x, object.y, "coin"); 
+                obj.setOrigin(0, 1.6); 
+                obj.setScale(1, 1); 
+                obj.body.width = object.width; 
+                obj.body.height = object.height; 
+            });
+
+            
+            lifesLayer  = map.getObjectLayer('lifes')['objects'];
+            lifes = this.physics.add.staticGroup();
+            lifesLayer.forEach(object => 
+            {
+                let obj = coins.create(object.x, object.y, "life"); 
+                obj.setOrigin(0, 1.6); 
+                obj.setScale(1, 1); 
+                obj.body.width = object.width; 
+                obj.body.height = object.height; 
+            });
+
+            
+            exitLayer  = map.getObjectLayer('exit')['objects'];
+            exit = this.physics.add.staticGroup();
+            exitLayer.forEach(object => 
+            {
+                let obj = coins.create(object.x, object.y, "exit"); 
+                obj.setOrigin(0, 1.6); 
+                obj.setScale(1, 1); 
+                obj.body.width = object.width; 
+                obj.body.height = object.height; 
+            });
+
+            //colisões
+            ground.setCollisionByProperty({ collides: true});
+        }
+
+        function update()
+        {
+
+        }
+    </script>
+</body>
+</html>
