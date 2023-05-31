@@ -183,6 +183,7 @@
             //colisão com objetos
             this.physics.add.collider(this.player, coins, collectCoin, null, this);
             this.physics.add.collider(this.player, lifes, collectLife, null, this);
+            this.physics.add.collider(this.player, exit, handleExitCollision);
             //#endregion
 
         }
@@ -196,8 +197,13 @@
         function handleDeathCollision(player, tile)
         {
             //configuração de quando o player encosta no fim do mapa
-            player.setPosition(32, 80);
-            playerLifes--;
+            if(playerLifes > 0)
+            {
+                player.setPosition(32, 80);
+                playerLifes--;
+            }
+            else
+                window.location.href = "lose.html";
         }
 
         function handleStairsCollision(player, tile) 
@@ -232,6 +238,11 @@
 
             // Add score
             playerLifes += 1; // Increase score by 10
+        }
+
+        function handleExitCollision(player, exit)
+        {
+            window.location.href = "win.html";
         }
 
         function update()
