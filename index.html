@@ -13,14 +13,15 @@
         //copiei do codigo do caio, alterar se necessario
         var config = {
             type: Phaser.AUTO,
-            width: 800,
-            height: 400,
+            width: 675,
+            height: 325,
             transparent: true,
             physics: 
             {
                 default: "arcade",
                 arcade: 
                 {
+                    debug: true,
 					fps: 120,
                     gravity: { y: 300 }
                 }
@@ -38,6 +39,9 @@
         };
 
         var game = new Phaser.Game(config);
+        
+        var player;
+        var stairs;
 
         let coinsLayer;
         let lifesLayer;
@@ -47,6 +51,12 @@
         let lifes;
         let exit;
 
+        var score = 0;
+        var scoreText;
+
+        let playerLifes = 1;
+        var lifesText;
+
         function preload()
         {
             this.load.image("tiles", "assets/monochrome_tilemap_transparent_packed.png");
@@ -55,30 +65,77 @@
             this.load.image("coin", "assets/coin.png");
             this.load.image("life", "assets/heart.png");
             this.load.image("exit", "assets/exit.png");
+
+            //player spritesheet
+            this.load.spritesheet('hero', "assets/hero.png", { frameWidth: 16, frameHeight: 16});
         }
 
         function create()
         {
-            //Mapa
+            
+            this.physics.world.debugGraphic.setVisible(true);
+            //#region hud
+            var coinHud = this.add.image(12, 12, 'coin');
+            coinHud.setScrollFactor(0);
+            scoreText = this.add.text(20, 6, '' + score, { fontSize: '10px', fill: '#FFFFFF' });
+            scoreText.setScrollFactor(0);
+
+            var heartHud = this.add.image(650, 12, 'life');
+            heartHud.setScrollFactor(0);
+            lifesText = this.add.text(660, 6, '' + playerLifes, { fontSize: '10px', fill: '#FFFFFF' });
+            lifesText.setScrollFactor(0);
+            //#endregion
+
+            //#region configurações básicas do player
+            this.player = this.physics.add.sprite(32, 80, 'hero');
+            this.player.setOrigin(0.5, 0.5);
+            this.player.body.setOffset(0, 0);
+            this.player.body.setSize(16, 16);
+            cursors = this.input.keyboard.createCursorKeys();
+            //#endregion
+
+            //#region animações do player
+            this.anims.create
+            ({
+            key: 'walk',
+            frames: this.anims.generateFrameNumbers('hero', { start: 0, end: 3 }), //numero de frames
+            frameRate: 4, //frames por segundo
+            repeat: 0 //loop infinito
+            });
+            //#endregion
+
+            //#region Mapa
             const map = this.make.tilemap({key: 'cave'});
             const tileset = map.addTilesetImage('cave', 'tiles');
         
             const ground = map.createLayer("ground", tileset);
+            ground.setCollisionBetween(0, 399);
 
-            map.createLayer("groundhard", tileset);
-            map.createLayer("stairs", tileset);
-            map.createLayer("death", tileset);
-            map.createLayer("decor", tileset);
+            groundhard = map.createLayer("groundhard", tileset);
+            groundhard.setCollisionBetween(123, 127);
 
-            //Objetos
+            stairs = map.createLayer("stairs", tileset);
+            //stairs.setCollisionBetween(0, 399);
+            stairs.setCollisionByExclusion([-1]);
+
+
+            const death = map.createLayer("death", tileset);
+            death.setCollisionBetween(0, 399);
+
+            decor = map.createLayer("decor", tileset);
+            //decor.setCollisionBetween(0, 399);
+            //#endregion
+
+            //#region Objetos
             
-            coinsLayer  = map.getObjectLayer('coins')['objects'];
+            coinsLayer = map.getObjectLayer('coins')['objects'];
             coins = this.physics.add.staticGroup();
             coinsLayer.forEach(object => 
             {
                 let obj = coins.create(object.x, object.y, "coin"); 
-                obj.setOrigin(0, 1.6); 
+                obj.setOrigin(0, 1); 
                 obj.setScale(1, 1); 
+                obj.body.setOffset(8, -8);
                 obj.body.width = object.width; 
                 obj.body.height = object.height; 
             });
@@ -88,9 +145,10 @@
             lifes = this.physics.add.staticGroup();
             lifesLayer.forEach(object => 
             {
-                let obj = coins.create(object.x, object.y, "life"); 
-                obj.setOrigin(0, 1.6); 
+                let obj = lifes.create(object.x, object.y, "life"); 
+                obj.setOrigin(0, 1); 
                 obj.setScale(1, 1); 
+                obj.body.setOffset(8, -8);
                 obj.body.width = object.width; 
                 obj.body.height = object.height; 
             });
@@ -100,19 +158,109 @@
             exit = this.physics.add.staticGroup();
             exitLayer.forEach(object => 
             {
-                let obj = coins.create(object.x, object.y, "exit"); 
-                obj.setOrigin(0, 1.6); 
+                let obj = exit.create(object.x, object.y, "exit"); 
+                obj.setOrigin(0, 1); 
                 obj.setScale(1, 1); 
+                obj.body.setOffset(8, -8);
                 obj.body.width = object.width; 
                 obj.body.height = object.height; 
             });
+            //#endregion
 
-            //colisões
-            ground.setCollisionByProperty({ collides: true});
+            //#region Configurações de câmera
+            this.cameras.main.startFollow(this.player);
+            this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
+            this.cameras.main.setSize(675, 325);
+            this.cameras.main.setFollowOffset(5, 5);
+            //#endregion
+
+            //#region colisões
+            this.physics.add.collider(this.player, ground);
+            this.physics.add.collider(this.player, groundhard, handleHardGroundCollision);
+            this.physics.add.collider(this.player, death, handleDeathCollision);
+            this.physics.add.collider(this.player, stairs, handleStairsCollision, null, this);
+
+            //colisão com objetos
+            this.physics.add.collider(this.player, coins, collectCoin, null, this);
+            this.physics.add.collider(this.player, lifes, collectLife, null, this);
+            //#endregion
+
+        }
+
+        function handleHardGroundCollision(player, tile) 
+        {
+            // Aplica o efeito de esteira
+            player.setVelocityX(player.body.velocity.x + 100);
+        }
+
+        function handleDeathCollision(player, tile)
+        {
+            //configuração de quando o player encosta no fim do mapa
+            player.setPosition(32, 80);
+            playerLifes--;
+        }
+
+        function handleStairsCollision(player, tile) 
+        {
+            if (cursors.up.isDown) 
+            {
+                // Move player up
+                player.body.y -= 5;
+                player.body.x = 16;
+                player.setVelocityX(0);
+            } 
+             if (cursors.down.isDown) 
+            {
+                // Move player down
+                player.body.y += 30;
+            }
+        }
+
+        function collectCoin(player, coin) 
+        {
+            // Remove the coin from the scene
+            coin.disableBody(true, true);
+
+            // Add score
+            score += 10; // Increase score by 10
+        }
+
+        function collectLife(player, life) 
+        {
+            // Remove the coin from the scene
+            life.disableBody(true, true);
+
+            // Add score
+            playerLifes += 1; // Increase score by 10
         }
 
         function update()
         {
+            //#region atualização da hud
+            scoreText.setText('' + score);
+            lifesText.setText('' + playerLifes);
+            //#endregion
+
+            //#region Movimentação do player
+            if (cursors.left.isDown) 
+            {
+                this.player.body.setVelocityX(-150); // Adjust the velocity as needed
+            }
+            else if (cursors.right.isDown) 
+            {
+                this.player.body.setVelocityX(150);
+            }
+            else 
+            {
+                this.player.body.setVelocityX(0);
+                this.player.anims.stop('walk');
+            }
+            if (cursors.up.isDown && this.player.body.onFloor()) 
+            {
+                this.player.body.setVelocityY(-150);
+            }
+
+            //#endregion
 
         }
     </script>
