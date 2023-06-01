@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8" />
-    <title>Plataforma</title>
+    <title>CaveAdventure</title>
     <script src="js/phaser.min.js"></script>
 <link rel="stylesheet" href="css/screen.css">
 </head>
@@ -66,14 +66,16 @@
             this.load.image("life", "assets/heart.png");
             this.load.image("exit", "assets/exit.png");
 
+            this.load.audio("backgroundMusic", ["assets/audio/music.mp3"]);
+
             //player spritesheet
             this.load.spritesheet('hero', "assets/hero.png", { frameWidth: 16, frameHeight: 16});
         }
 
         function create()
         {
-            
             this.physics.world.debugGraphic.setVisible(true);
+            this.sound.add('backgroundMusic', { loop: true }).play();
             //#region hud
             var coinHud = this.add.image(12, 12, 'coin');
             coinHud.setScrollFactor(0);
@@ -98,10 +100,11 @@
             this.anims.create
             ({
             key: 'walk',
-            frames: this.anims.generateFrameNumbers('hero', { start: 0, end: 3 }), //numero de frames
-            frameRate: 4, //frames por segundo
-            repeat: 0 //loop infinito
+            frames: this.anims.generateFrameNumbers('hero', { start: 1, end: 3 }), //numero de frames
+            frameRate: 7, //frames por segundo
+            repeat: -1 //loop infinito
             });
+
             //#endregion
 
             //#region Mapa
@@ -251,20 +254,23 @@
             scoreText.setText('' + score);
             lifesText.setText('' + playerLifes);
             //#endregion
-
+            
             //#region Movimentação do player
             if (cursors.left.isDown) 
             {
-                this.player.body.setVelocityX(-150); // Adjust the velocity as needed
+                //this.player.play('walk');
+                this.player.body.setVelocityX(-100);
+                this.player.flipX = true;
             }
             else if (cursors.right.isDown) 
             {
-                this.player.body.setVelocityX(150);
+                this.player.body.setVelocityX(100);
+                this.player.flipX = false;
             }
-            else 
+            else
             {
+                this.player.play('walk');
                 this.player.body.setVelocityX(0);
-                this.player.anims.stop('walk');
             }
             if (cursors.up.isDown && this.player.body.onFloor()) 
             {

@@ -1,0 +1,24 @@
+body {
+  margin: 0;
+  background: #000000;
+}
+
+#botao{text-align: center}
+.button {
+  background-color: rgb(255, 255, 255);
+  border: none;
+  color: rgb(0, 0, 0);
+  padding: 10px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
+div
+{
+	text-align: center;
+}
+.title_image {
+	
+	height: 70vh;
+}
